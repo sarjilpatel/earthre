@@ -1,0 +1,4 @@
+backend/*/package/
+backend/*/*.zip
+__pycache__/
+.env
