@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 import pg8000
 
 
-
 def lambda_handler(event, context):
     body = event.get("body", "")
     if event.get("isBase64Encoded"):
@@ -28,18 +27,20 @@ def lambda_handler(event, context):
             clean_rows.append(cleaned)
 
     inserted_count = save_rows(clean_rows)
+    duplicate_count = len(clean_rows) - inserted_count
 
     result = {
         "rows_in_file": len(clean_rows) + skipped_count,
+        "rows_messy": skipped_count,
         "rows_cleaned": len(clean_rows),
-        "rows_unreadable": skipped_count,
-        "rows_inserted_or_updated": inserted_count,
+        "rows_inserted": inserted_count,
+        "rows_duplicate": duplicate_count,
     }
 
     return {
         "statusCode": 200,
         "headers": {
-            "Access-Control-Allow-Origin": "*", 
+            "Access-Control-Allow-Origin": "*",
             "Content-Type": "application/json",
         },
         "body": json.dumps(result),
@@ -52,22 +53,20 @@ def clean_row(row):
     agent = row.get("agent", "").strip()
     region = row.get("region", "").strip()
 
-
     if not service_id or not agent:
-        return None 
-
+        return None
 
     checked_at = normalize_timestamp(row.get("timestamp", ""))
     if checked_at is None:
-        return None 
-
+        return None
 
     try:
         status_code = int(row.get("status_code", ""))
     except (ValueError, TypeError):
-        return None 
+        return None
 
-    latency_ms = normalize_latency(row.get("latency", ""), row.get("latency_unit", ""))
+    latency_ms = normalize_latency(
+        row.get("latency", ""), row.get("latency_unit", ""))
 
     return {
         "service_id": service_id,
@@ -85,11 +84,9 @@ def normalize_timestamp(raw_value):
 
     if not raw_value:
         return None
-    
 
     if raw_value.isdigit():
         return datetime.fromtimestamp(int(raw_value), tz=timezone.utc)
-
 
     try:
         iso_value = raw_value.replace("Z", "+00:00")
@@ -102,8 +99,7 @@ def normalize_timestamp(raw_value):
 def normalize_latency(raw_value, unit):
     raw_value = (raw_value or "").strip()
     if raw_value == "":
-        return None 
-    
+        return None
 
     try:
         value = float(raw_value)
@@ -111,7 +107,7 @@ def normalize_latency(raw_value, unit):
         return None
 
     if value < 0:
-        return None 
+        return None
 
     unit = (unit or "").strip()
     if unit == "s":
@@ -134,6 +130,7 @@ def save_rows(rows):
     cursor = connection.cursor()
 
     BATCH_SIZE = 500
+    inserted_total = 0
 
     for start in range(0, len(rows), BATCH_SIZE):
         batch = rows[start:start + BATCH_SIZE]
@@ -157,11 +154,13 @@ def save_rows(rows):
                 (service_id, service_name, checked_at, status_code, latency_ms, agent, region)
             VALUES {placeholders}
             ON CONFLICT (service_id, checked_at, agent) DO NOTHING
+            RETURNING id
         """
         cursor.execute(insert_sql, values)
+        inserted_total += len(cursor.fetchall())
 
     connection.commit()
     cursor.close()
     connection.close()
 
-    return len(rows)
+    return inserted_total
