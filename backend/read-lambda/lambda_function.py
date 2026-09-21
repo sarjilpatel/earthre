@@ -111,7 +111,8 @@ def get_logs(query_params):
     cursor = connection.cursor()
 
     base_query = """
-        SELECT service_id, service_name, checked_at, status_code, latency_ms, agent, region
+        SELECT service_id, service_name, checked_at, status_code, latency_ms, agent, region,
+               COUNT(*) OVER() AS total_matching
         FROM checks
         WHERE checked_at::date {condition}
         ORDER BY checked_at
@@ -125,8 +126,11 @@ def get_logs(query_params):
         sql = base_query.format(condition="BETWEEN %s AND %s")
         cursor.execute(sql, (start_date, end_date, limit, offset))
 
+    rows = cursor.fetchall()
+    total_matching = rows[0][7] if rows else 0
+
     logs = []
-    for service_id, service_name, checked_at, status_code, latency_ms, agent, region in cursor.fetchall():
+    for service_id, service_name, checked_at, status_code, latency_ms, agent, region, _total in rows:
         logs.append({
             "service_id": service_id,
             "service_name": service_name,
@@ -140,4 +144,10 @@ def get_logs(query_params):
     cursor.close()
     connection.close()
 
-    return {"count": len(logs), "limit": limit, "offset": offset, "logs": logs}
+    return {
+        "total": total_matching,
+        "returned": len(logs),
+        "limit": limit,
+        "offset": offset,
+        "logs": logs,
+    }
