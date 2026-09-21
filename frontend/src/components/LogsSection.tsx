@@ -7,6 +7,8 @@ import type { LogEntry, LogFilterMode } from '../types/api'
 import { formatLatency, formatTime } from '../utils/formatters'
 
 const PAGE_SIZE = 100
+const SAMPLE_DATE = '2025-05-13'
+const SAMPLE_END_DATE = '2025-05-14'
 
 type LogsSectionProps = {
   refreshKey: number
@@ -220,37 +222,62 @@ function LogsSection({ refreshKey, initialDate }: LogsSectionProps) {
         </div>
 
         {filter.mode === 'single' ? (
-          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-            Date
-            <input
-              type="date"
-              value={filter.date}
-              onChange={(event) => updateFilter({ date: event.target.value })}
-              className="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-900 focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100"
-            />
-          </label>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+              Date
+              <input
+                type="date"
+                value={filter.date}
+                onChange={(event) => updateFilter({ date: event.target.value })}
+                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-900 focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => updateFilter({ date: SAMPLE_DATE })}
+              className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:border-cyan-700 hover:text-cyan-800"
+            >
+              Use May 13, 2025
+            </button>
+          </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-              Start date
-              <input
-                type="date"
-                value={filter.startDate}
-                onChange={(event) =>
-                  updateFilter({ startDate: event.target.value })
-                }
-                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-900 focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-              End date
-              <input
-                type="date"
-                value={filter.endDate}
-                onChange={(event) => updateFilter({ endDate: event.target.value })}
-                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-900 focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100"
-              />
-            </label>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                Start date
+                <input
+                  type="date"
+                  value={filter.startDate}
+                  onChange={(event) =>
+                    updateFilter({ startDate: event.target.value })
+                  }
+                  className="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-900 focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                End date
+                <input
+                  type="date"
+                  value={filter.endDate}
+                  onChange={(event) =>
+                    updateFilter({ endDate: event.target.value })
+                  }
+                  className="h-10 rounded-md border border-slate-300 bg-white px-3 text-slate-900 focus:border-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-100"
+                />
+              </label>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                updateFilter({
+                  startDate: SAMPLE_DATE,
+                  endDate: SAMPLE_END_DATE,
+                })
+              }
+              className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:border-cyan-700 hover:text-cyan-800"
+            >
+              Use May 13-14, 2025
+            </button>
           </div>
         )}
       </div>
